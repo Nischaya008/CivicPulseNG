@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, MapPin, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Loader2, AlertTriangle, UploadCloud, XCircle, Crosshair, Brain } from 'lucide-react';
+import { Camera, MapPin, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Loader2, AlertTriangle, UploadCloud, XCircle, Crosshair, Brain, Video } from 'lucide-react';
 import { addDoc, collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -301,12 +301,20 @@ export default function NewIssue() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <label className="sm:hidden flex-1 border-2 border-dashed border-[#DCCCAC] rounded-xl p-4 hover:bg-[#546B41]/5 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center text-center bg-white shadow-sm">
-              <input type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
-              <Camera size={24} className="text-[#546B41] mb-1" />
-              <p className="text-[#546B41] font-semibold text-xs">Take Photo / Video</p>
-              <p className="text-[#546B41]/40 text-[10px] mt-1">Max 15s</p>
-            </label>
+            <div className="sm:hidden flex flex-row gap-3 w-full">
+              <label className="flex-1 border-2 border-dashed border-[#DCCCAC] rounded-xl p-3 hover:bg-[#546B41]/5 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center text-center bg-white shadow-sm">
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
+                <Camera size={24} className="text-[#546B41] mb-1" />
+                <p className="text-[#546B41] font-semibold text-xs">Take Photo</p>
+              </label>
+              
+              <label className="flex-1 border-2 border-dashed border-[#DCCCAC] rounded-xl p-3 hover:bg-[#546B41]/5 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center text-center bg-white shadow-sm">
+                <input type="file" accept="video/*" capture="environment" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
+                <Video size={24} className="text-[#546B41] mb-1" />
+                <p className="text-[#546B41] font-semibold text-xs">Take Video</p>
+                <p className="text-[#546B41]/40 text-[10px] mt-1">Max 15s</p>
+              </label>
+            </div>
             
             <label className="flex-1 border-2 border-dashed border-[#DCCCAC] rounded-xl p-4 hover:bg-[#546B41]/5 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center text-center bg-white shadow-sm">
               <input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
