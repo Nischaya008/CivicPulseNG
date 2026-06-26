@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@theme {
+  --color-primary: #546B41;
+  --color-secondary: #99AD7A;
+  --color-accent: #DCCCAC;
+  --color-bg: #FFF8EC;
+  --color-dark: #1e293b;
+}
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-dark);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom Grid Layouts */
+.app-container {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: 48px repeat(4, 1fr) 40px;
+  gap: 16px;
+  padding: 16px;
+  width: 100vw;
+  height: 100dvh;
+  box-sizing: border-box;
+}
+
+.grid-bg { grid-area: 1 / 1 / 7 / 7; background-color: var(--color-bg); z-index: -1; }
+.grid-sidebar { grid-area: 1 / 1 / 7 / 2; }
+.grid-map { grid-area: 2 / 2 / 6 / 5; min-width: 0; min-height: 0; }
+.grid-issues { grid-area: 2 / 5 / 6 / 7; min-width: 0; min-height: 0; }
+.grid-page { grid-area: 2 / 2 / 6 / 7; overflow-y: auto; min-width: 0; min-height: 0; }
+.grid-marquee { grid-area: 1 / 2 / 2 / 7; }
+.grid-footer { grid-area: 6 / 2 / 7 / 7; }
+
+/* Curved Panels */
+.panel {
+  border-radius: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 1024px) {
+  .app-container {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 32px 25vh 1fr;
+    gap: 12px;
+    padding: 12px;
+    overflow: hidden;
+    height: 100dvh;
+    position: relative;
+  }
+  .grid-bg { grid-area: 1 / 1 / 4 / 4; }
+  .grid-marquee { grid-area: 1 / 1 / 2 / 4; }
+  .grid-map { grid-area: 2 / 1 / 3 / 4; }
+  .grid-issues { grid-area: 3 / 1 / 4 / 4; overflow-y: auto; padding-bottom: 80px; }
+  .grid-page { grid-area: 2 / 1 / 4 / 4; overflow-y: auto; padding-bottom: 80px; }
+  .grid-sidebar { position: fixed; bottom: 16px; left: 16px; right: 16px; width: calc(100% - 32px); height: 64px; z-index: 9999; }
+  .grid-footer { display: none; }
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #DCCCAC; border-radius: 10px; }
+.custom-scrollbar { scrollbar-width: thin; scrollbar-color: #DCCCAC transparent; }
+
+
+
