@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   GoogleAuthProvider, 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
   signOut, 
   onAuthStateChanged
 } from 'firebase/auth';
@@ -54,7 +55,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.warn("Popup sign-in failed (likely blocked by browser/COOP). Falling back to redirect...", error);
+      await signInWithRedirect(auth, provider);
+    }
   };
 
   const logout = () => {
