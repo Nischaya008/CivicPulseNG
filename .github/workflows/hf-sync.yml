@@ -27,6 +27,21 @@ jobs:
           # Remove the frontend folder from being staged
           git rm -rf --cached frontend/
           
+          # Create a Hugging Face specific README.md just for this deployment
+          cat << 'EOF' > README.md
+          ---
+          title: CivicPulseNG Backend
+          emoji: 🏙️
+          colorFrom: green
+          colorTo: blue
+          sdk: docker
+          app_port: 7860
+          ---
+          # CivicPulseNG Backend
+          EOF
+          
+          git add README.md
+          
           git commit -m "Deploy backend (excluding frontend history)"
           
           git remote add space https://Nischaya008:$HF_TOKEN@huggingface.co/spaces/Nischaya008/civicpulseng-backend
