@@ -35,7 +35,7 @@ jobs:
           colorFrom: green
           colorTo: blue
           sdk: docker
-          app_port: 7860
+          app_port: 3000
           ---
           # CivicPulseNG Backend
           EOF
