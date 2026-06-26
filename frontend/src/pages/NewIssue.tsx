@@ -302,14 +302,14 @@ export default function NewIssue() {
 
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <label className="sm:hidden flex-1 border-2 border-dashed border-[#DCCCAC] rounded-xl p-4 hover:bg-[#546B41]/5 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center text-center bg-white shadow-sm">
-              <input type="file" accept="image/*,video/mp4,video/quicktime" capture="environment" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
+              <input type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
               <Camera size={24} className="text-[#546B41] mb-1" />
               <p className="text-[#546B41] font-semibold text-xs">Take Photo / Video</p>
               <p className="text-[#546B41]/40 text-[10px] mt-1">Max 15s</p>
             </label>
             
             <label className="flex-1 border-2 border-dashed border-[#DCCCAC] rounded-xl p-4 hover:bg-[#546B41]/5 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center text-center bg-white shadow-sm">
-              <input type="file" accept="image/*,video/mp4,video/quicktime" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
+              <input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]); }} />
               <UploadCloud size={24} className="text-[#546B41] mb-1" />
               <p className="text-[#546B41] font-semibold text-xs">Upload from Gallery</p>
               <p className="text-[#546B41]/40 text-[10px] mt-1">Max 15s</p>
