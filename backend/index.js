@@ -517,12 +517,12 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ───────────────────────────────────────────────
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`\n╔══════════════════════════════════════════════╗`);
   console.log(`║     CivicPulse AI Backend — v0.5.0          ║`);
   console.log(`║     Milestones 1-9 Complete                 ║`);
   console.log(`╠══════════════════════════════════════════════╣`);
-  console.log(`║  Server:    http://localhost:${port}            ║`);
+  console.log(`║  Server:    http://0.0.0.0:${port}            ║`);
   console.log(`║  Uploads:   ${UPLOAD_DIR.slice(-30).padEnd(32)}║`);
   console.log(`║  Gemini AI: ${(process.env.GEMINI_API_KEY ? 'Configured ✓' : 'NOT SET ✗').padEnd(32)}║`);
   console.log(`║  Groq AI:   ${(process.env.GROQ_API_KEY ? 'Configured ✓' : 'NOT SET ✗').padEnd(32)}║`);
