@@ -21,9 +21,15 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           
-          # Remove the frontend folder so Hugging Face doesn't reject its binary images
-          git rm -r --cached frontend/
-          git commit -m "Deploy backend (excluding frontend)"
+          # Create a fresh branch with no history to avoid pushing past binary files
+          git checkout --orphan hf-deploy
+          
+          # Remove the frontend folder from being staged
+          git rm -rf --cached frontend/
+          
+          git commit -m "Deploy backend (excluding frontend history)"
           
           git remote add space https://Nischaya008:$HF_TOKEN@huggingface.co/spaces/Nischaya008/civicpulseng-backend
-          git push --force space HEAD:main
+          
+          # Force push this single, clean commit to the Space's main branch
+          git push --force space hf-deploy:main
