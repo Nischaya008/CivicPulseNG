@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -9,8 +9,14 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-  const { signInWithGoogle } = useAuth();
+  const { user, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && isOpen) {
+      onClose();
+    }
+  }, [user, isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -64,7 +70,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
             <button
               onClick={handleGoogleLogin}
-              className="w-full relative group overflow-hidden rounded-2xl bg-white border-2 border-[#DCCCAC] shadow-[0_4px_14px_0_rgba(220,204,172,0.39)] hover:shadow-[0_6px_20px_rgba(84,107,65,0.23)] hover:border-[#546B41] transition-all duration-300"
+              className="cursor-pointer w-full relative group overflow-hidden rounded-2xl bg-white border-2 border-[#DCCCAC] shadow-[0_4px_14px_0_rgba(220,204,172,0.39)] hover:shadow-[0_6px_20px_rgba(84,107,65,0.23)] hover:border-[#546B41] transition-all duration-300"
             >
               <div className="absolute inset-0 w-3 bg-[#546B41] transition-all duration-[250ms] ease-out group-hover:w-full"></div>
               <div className="relative flex items-center justify-center gap-3 px-6 py-4">

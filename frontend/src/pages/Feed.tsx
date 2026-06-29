@@ -334,9 +334,9 @@ export default function Feed() {
                   <div className="flex gap-3">
                     {issue.media_urls?.[0] ? (
                       issue.media_urls[0].match(/\.(mp4|webm|mov|avi)($|\?)/i) ? (
-                        <video src={issue.media_urls[0]} className="w-12 h-12 object-cover rounded-xl bg-black shrink-0" autoPlay loop muted playsInline />
+                        <video src={issue.media_urls[0].replace(/^http:/i, 'https:')} className="w-12 h-12 object-cover rounded-xl bg-black shrink-0" autoPlay loop muted playsInline />
                       ) : (
-                        <img src={issue.media_urls[0]} alt="Issue" className="w-12 h-12 object-cover rounded-xl bg-[#FFF8EC] shrink-0" />
+                        <img src={issue.media_urls[0].replace(/^http:/i, 'https:')} alt="Issue" className="w-12 h-12 object-cover rounded-xl bg-[#FFF8EC] shrink-0" />
                       )
                     ) : (
                       <div className="w-12 h-12 bg-[#FFF8EC] border border-[#DCCCAC]/50 rounded-xl flex items-center justify-center text-[#99AD7A] shrink-0">
