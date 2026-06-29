@@ -64,6 +64,7 @@ export default function IssueDetails() {
   const [commentLoading, setCommentLoading] = useState(false);
   const [evidence, setEvidence] = useState<any[]>([]);
   const [evidenceUploading, setEvidenceUploading] = useState(false);
+  const [resolutionUploading, setResolutionUploading] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   const isReporter = issue?.reporter_id === user?.uid;
@@ -244,6 +245,36 @@ export default function IssueDetails() {
     }
   };
 
+  // ─── Upload Resolution Proof ──────────────────────────────
+  const handleResolutionUpload = async (file: File) => {
+    if (!user || !id) return;
+    setResolutionUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('user_id', user.uid);
+
+      const res = await fetch(`${BACKEND_URL}/api/issues/${id}/resolve`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Resolution verification failed');
+
+      if (data.is_resolved) {
+        addToast({ type: 'success', title: 'Issue Resolved!', message: `AI confirmed resolution with ${Math.round(data.confidence * 100)}% confidence.` });
+      } else {
+        addToast({ type: 'error', title: 'Resolution Denied', message: `AI determined the issue is not resolved. ${data.reasoning}` });
+      }
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Verification Error', message: err.message });
+    } finally {
+      setResolutionUploading(false);
+    }
+  };
+
   // ─── Loading / Not Found States ────────────────────────────
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -281,11 +312,22 @@ export default function IssueDetails() {
             {/* Hero Card */}
             <div className="bg-[#FFF8EC] rounded-2xl overflow-hidden border border-[#DCCCAC] shadow-sm">
               {/* Media */}
-              {issue.media_urls?.[0] ? (
+              {issue.status === 'Resolved' && issue.resolution_media_url && issue.media_urls?.[0] ? (
+                <div className="w-full flex h-56 bg-black">
+                  <div className="flex-1 border-r-2 border-white relative">
+                    <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Before</span>
+                    <img src={issue.media_urls[0].replace(/^http:/i, 'https:')} className="w-full h-full object-cover opacity-80" alt="Before" />
+                  </div>
+                  <div className="flex-1 relative">
+                    <span className="absolute top-2 right-2 bg-emerald-500/80 text-white text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">After</span>
+                    <img src={issue.resolution_media_url.replace(/^http:/i, 'https:')} className="w-full h-full object-cover" alt="After" />
+                  </div>
+                </div>
+              ) : issue.media_urls?.[0] ? (
                 issue.media_urls[0].match(/\.(mp4|webm|mov|avi)($|\?)/i) ? (
-                  <video src={issue.media_urls[0]} controls className="w-full h-56 object-contain bg-black" />
+                  <video src={issue.media_urls[0].replace(/^http:/i, 'https:')} controls className="w-full h-56 object-contain bg-black" />
                 ) : (
-                  <img src={issue.media_urls[0]} className="w-full h-56 object-cover" alt="Issue" />
+                  <img src={issue.media_urls[0].replace(/^http:/i, 'https:')} className="w-full h-56 object-cover" alt="Issue" />
                 )
               ) : (
                 <div className="w-full h-40 bg-gradient-to-br from-[#DCCCAC]/30 to-[#FFF8EC] flex items-center justify-center text-[#DCCCAC]">
@@ -317,7 +359,7 @@ export default function IssueDetails() {
                 <p className="text-[#546B41]/60 text-sm leading-relaxed mb-4">{issue.description}</p>
 
                 {/* Metadata */}
-                <div className="flex flex-wrap gap-4 text-xs text-[#546B41]/50">
+                <div className="flex flex-wrap gap-4 text-xs text-[#546B41]/50 mb-4">
                   <div className="flex items-center gap-1.5">
                     <MapPin size={12} className="text-[#546B41]" />
                     <span className="truncate max-w-[200px]">{issue.address || 'Unknown location'}</span>
@@ -327,6 +369,37 @@ export default function IssueDetails() {
                     <span>{issue.created_at?.toDate?.().toLocaleString?.() || 'Unknown time'}</span>
                   </div>
                 </div>
+
+                {/* Voice Note Section */}
+                {issue.voice_note_url && (
+                  <div className="bg-[#546B41]/5 border border-[#DCCCAC]/50 rounded-xl p-3 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="bg-[#546B41] rounded-full p-1.5 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                      </div>
+                      <span className="text-xs font-bold text-[#546B41] uppercase tracking-wider">Voice Note</span>
+                      {issue.voice_note_lang && <span className="text-[10px] text-[#546B41]/60 bg-white px-2 py-0.5 rounded-full border border-[#DCCCAC]/30">{issue.voice_note_lang}</span>}
+                    </div>
+                    <audio src={issue.voice_note_url} controls className="h-8 w-full rounded-md mb-2" />
+                    <p className="text-xs italic text-[#546B41]/80 bg-white p-2 rounded border border-[#DCCCAC]/30">"{issue.voice_note_text}"</p>
+                    {issue.voice_note_english && issue.voice_note_english !== issue.voice_note_text && (
+                      <p className="text-[10px] text-slate-500 mt-1 pl-2 border-l-2 border-[#DCCCAC]/50">
+                        <strong>Translation:</strong> "{issue.voice_note_english}"
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Resolution Info */}
+                {issue.status === 'Resolved' && issue.resolution_reasoning && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <ShieldCheck size={14} className="text-emerald-600" />
+                      <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">AI Verified Resolution</span>
+                    </div>
+                    <p className="text-xs text-emerald-700 leading-relaxed font-medium">{issue.resolution_reasoning}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -536,19 +609,25 @@ export default function IssueDetails() {
                   <div className="grid grid-cols-3 gap-1.5">
                     {evidence.map((ev: any, i: number) => (
                       ev.media_url && (
-                        <img key={i} src={ev.media_url} alt="Evidence" className="w-full h-16 object-cover rounded-lg border border-[#DCCCAC]/40" />
+                        <img key={i} src={ev.media_url.replace(/^http:/i, 'https:')} alt="Evidence" className="w-full h-16 object-cover rounded-lg border border-[#DCCCAC]/40" />
                       )
                     ))}
                   </div>
                 </div>
               )}
 
-              {!isReporter && (
-                <div className="mt-3">
+              {!isReporter && issue.status !== 'Resolved' && (
+                <div className="mt-3 flex gap-3">
                   <label className="flex items-center gap-1.5 text-[10px] text-[#546B41] cursor-pointer hover:text-[#435733] transition-colors font-bold">
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleEvidenceUpload(e.target.files[0]); }} />
                     {evidenceUploading ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
                     Upload evidence
+                  </label>
+                  
+                  <label className="flex items-center gap-1.5 text-[10px] text-emerald-600 cursor-pointer hover:text-emerald-700 transition-colors font-bold bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">
+                    <input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleResolutionUpload(e.target.files[0]); }} />
+                    {resolutionUploading ? <Loader2 size={11} className="animate-spin" /> : <Camera size={11} />}
+                    Submit Resolution Proof
                   </label>
                 </div>
               )}
