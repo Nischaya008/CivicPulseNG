@@ -560,6 +560,10 @@ function downloadFile(url) {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
     client.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        // Handle redirects
+        return downloadFile(res.headers.location).then(resolve).catch(reject);
+      }
       if (res.statusCode !== 200) {
         reject(new Error(`Failed to download file: ${res.statusCode}`));
         return;
