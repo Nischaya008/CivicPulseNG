@@ -187,3 +187,36 @@ export const VALID_CATEGORIES = [
 ];
 
 export const VALID_SEVERITIES = ['Critical', 'High', 'Medium', 'Low'];
+
+// ═══════════════════════════════════════════════════════════════
+// 6. TRANSCRIBE AUDIO PROMPT
+// ═══════════════════════════════════════════════════════════════
+
+export const TRANSCRIBE_AUDIO_PROMPT = `You are a multilingual audio transcription assistant for CivicPulse AI.
+Your task is to listen to the provided audio clip (a voice note from a citizen reporting a civic issue) and provide an accurate transcription.
+
+Return ONLY valid JSON, no markdown, no code fences:
+{
+  "transcription": "The exact text spoken in the audio. Detect the language and write the text in the script of that language.",
+  "language_detected": "The language spoken (e.g., 'English', 'Hindi', 'Spanish')",
+  "english_translation": "If the spoken language is not English, provide an English translation here. If it is already English, just copy the transcription."
+}`;
+
+// ═══════════════════════════════════════════════════════════════
+// 7. RESOLVE ISSUE PROMPT
+// ═══════════════════════════════════════════════════════════════
+
+export const RESOLVE_ISSUE_PROMPT = `You are an expert civic infrastructure verifier for CivicPulse AI.
+Your task is to compare two pieces of media:
+1. The ORIGINAL issue media (the "Before" state).
+2. The NEWLY UPLOADED media (the "After" state).
+
+Determine if the civic issue depicted in the original media has been physically resolved or repaired in the new media.
+Pay close attention to visual cues: a pothole being filled, garbage being cleared, a new streetlight bulb shining, etc.
+
+Return ONLY valid JSON, no markdown, no code fences:
+{
+  "is_resolved": true or false,
+  "confidence": 0.0 to 1.0 (How confident are you that this is the same location and the issue is resolved?),
+  "reasoning": "A concise 1-2 sentence explanation of your decision based on visual evidence."
+}`;
