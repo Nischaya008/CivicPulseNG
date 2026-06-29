@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, MapPin, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Loader2, AlertTriangle, UploadCloud, XCircle, Crosshair, Brain, Video } from 'lucide-react';
+import { Camera, MapPin, CheckCircle, ChevronRight, ChevronLeft, Sparkles, Loader2, AlertTriangle, UploadCloud, XCircle, Crosshair, Brain, Video, Mic, Square, PlayCircle } from 'lucide-react';
 import { addDoc, collection, getDocs, query, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -50,6 +50,17 @@ export default function NewIssue() {
   const [aiRejection, setAiRejection] = useState<string | null>(null);
   const [uploadedMediaUrl, setUploadedMediaUrl] = useState<string | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<any>(null);
+
+  // Voice Note states
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [voiceNoteUploading, setVoiceNoteUploading] = useState(false);
+  const [voiceNoteData, setVoiceNoteData] = useState<{
+    url: string | null;
+    text: string | null;
+    lang: string | null;
+    english: string | null;
+  }>({ url: null, text: null, lang: null, english: null });
 
   const handleNext = () => setStep(s => Math.min(4, s + 1));
   const handlePrev = () => setStep(s => Math.max(1, s - 1));
@@ -118,7 +129,7 @@ export default function NewIssue() {
         }));
       }
       if (data.media_url) {
-        setUploadedMediaUrl(data.media_url);
+        setUploadedMediaUrl(data.media_url.replace(/^http:/i, 'https:'));
       }
     } catch (err) {
       console.error('AI analysis failed:', err);
@@ -198,6 +209,10 @@ export default function NewIssue() {
         media_urls: finalMediaUrl ? [finalMediaUrl] : [],
         ai_analysis: aiAnalysis || null,
         embedding,
+        voice_note_url: voiceNoteData.url,
+        voice_note_text: voiceNoteData.text,
+        voice_note_lang: voiceNoteData.lang,
+        voice_note_english: voiceNoteData.english,
       });
 
       // Milestone 8: Trigger Agent Pipeline
@@ -595,11 +610,105 @@ export default function NewIssue() {
                 <div className="h-full pt-4 lg:pt-0">
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#546B41]/70 mb-1">Description</label>
                   <textarea
-                    className="w-full px-4 py-3 border border-[#DCCCAC] rounded-lg focus:ring-2 focus:ring-[#546B41] outline-none h-[220px] resize-none shadow-sm bg-white"
+                    className="w-full px-4 py-3 border border-[#DCCCAC] rounded-lg focus:ring-2 focus:ring-[#546B41] outline-none h-[150px] resize-none shadow-sm bg-white mb-4"
                     placeholder="Describe the issue in detail..."
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                   />
+
+                  {/* Voice Note Recorder */}
+                  <div className="bg-[#546B41]/5 rounded-xl border border-[#DCCCAC]/50 p-4 shadow-sm">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#546B41]/70 mb-2">Voice Note (Optional)</label>
+                    <div className="flex items-center gap-3">
+                      {!isRecording && !voiceNoteData.url && !voiceNoteUploading && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                              const recorder = new MediaRecorder(stream);
+                              const chunks: BlobPart[] = [];
+                              recorder.ondataavailable = e => chunks.push(e.data);
+                              recorder.onstop = async () => {
+                                setVoiceNoteUploading(true);
+                                const blob = new Blob(chunks, { type: 'audio/webm' });
+                                const uploadData = new FormData();
+                                uploadData.append('file', blob, 'voicenote.webm');
+                                try {
+                                  const res = await fetch(`${BACKEND_URL}/api/ai/transcribe`, {
+                                    method: 'POST',
+                                    body: uploadData
+                                  });
+                                  const data = await res.json();
+                                  setVoiceNoteData({
+                                    url: data.audio_url,
+                                    text: data.transcription,
+                                    lang: data.language_detected,
+                                    english: data.english_translation
+                                  });
+                                } catch (err) {
+                                  console.error("Voice note upload failed:", err);
+                                } finally {
+                                  setVoiceNoteUploading(false);
+                                  stream.getTracks().forEach(track => track.stop());
+                                }
+                              };
+                              recorder.start();
+                              setMediaRecorder(recorder);
+                              setIsRecording(true);
+                            } catch (err) {
+                              console.error("Could not start recording:", err);
+                              alert("Microphone permission denied or unavailable.");
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#546B41] hover:bg-[#435733] text-white font-semibold text-sm transition-all"
+                        >
+                          <Mic size={16} /> Record Audio
+                        </button>
+                      )}
+
+                      {isRecording && (
+                        <button
+                          onClick={() => {
+                            if (mediaRecorder) {
+                              mediaRecorder.stop();
+                              setIsRecording(false);
+                            }
+                          }}
+                          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold text-sm transition-all animate-pulse"
+                        >
+                          <Square size={16} /> Stop Recording
+                        </button>
+                      )}
+
+                      {voiceNoteUploading && (
+                        <div className="flex items-center gap-2 text-sm font-semibold text-[#546B41]">
+                          <Loader2 size={16} className="animate-spin" /> Processing Audio...
+                        </div>
+                      )}
+
+                      {voiceNoteData.url && !voiceNoteUploading && (
+                        <div className="flex-1">
+                          <audio src={voiceNoteData.url} controls className="h-10 w-full rounded-md" />
+                          <div className="mt-1 flex justify-between items-center">
+                            <span className="text-xs font-semibold text-[#546B41]">
+                              Language: {voiceNoteData.lang}
+                            </span>
+                            <button
+                              onClick={() => setVoiceNoteData({ url: null, text: null, lang: null, english: null })}
+                              className="text-xs text-red-500 hover:underline font-semibold"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {voiceNoteData.text && (
+                      <div className="mt-3 p-2 bg-white rounded-md border border-[#DCCCAC]/40 text-xs italic text-[#546B41]/80 max-h-20 overflow-y-auto">
+                        "{voiceNoteData.text}"
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -659,6 +768,24 @@ export default function NewIssue() {
                   <span className="text-[#546B41]/60 font-bold uppercase tracking-wider text-[10px]">Description</span>
                   <p className="text-[#546B41]/70 text-xs font-medium leading-relaxed mt-0.5">{formData.description}</p>
                 </div>
+                
+                {voiceNoteData.url && (
+                  <>
+                    <hr className="border-[#DCCCAC]/30" />
+                    <div>
+                      <span className="text-[#546B41]/60 font-bold uppercase tracking-wider text-[10px] flex items-center gap-1"><Mic size={11} /> Voice Note</span>
+                      <audio src={voiceNoteData.url} controls className="h-8 w-full rounded-md mt-2" />
+                      <div className="bg-slate-50 border border-slate-100 rounded p-2 mt-2">
+                        <p className="text-xs italic text-[#546B41]/80 leading-relaxed">"{voiceNoteData.text}"</p>
+                        {voiceNoteData.english && voiceNoteData.english !== voiceNoteData.text && (
+                          <p className="text-[10px] text-slate-500 mt-1 border-t border-slate-200 pt-1">
+                            <strong>English:</strong> "{voiceNoteData.english}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* AI Analysis Card */}
