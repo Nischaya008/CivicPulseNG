@@ -22,7 +22,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { VALIDATE_MEDIA_PROMPT, CLASSIFY_ISSUE_PROMPT, SUMMARIZE_ISSUE_PROMPT } from './prompts.js';
+import { VALIDATE_MEDIA_PROMPT, CLASSIFY_ISSUE_PROMPT, SUMMARIZE_ISSUE_PROMPT, TRANSCRIBE_AUDIO_PROMPT, RESOLVE_ISSUE_PROMPT } from './prompts.js';
 import { calculateSeverity } from './severityEngine.js';
 import { GoogleGenAI } from '@google/genai';
 import { pipeline, env } from '@xenova/transformers';
@@ -513,4 +513,103 @@ export function findDuplicates(newEmbedding, existingIssues, threshold = 0.85) {
     is_likely_duplicate: duplicates.length > 0,
     best_match_id: duplicates.length > 0 ? duplicates[0].existing_issue_id : null,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRANSCRIBE AUDIO (Feature 2)
+// ═══════════════════════════════════════════════════════════════
+
+export async function transcribeAudio(mediaPath) {
+  if (!mediaPath || !fs.existsSync(mediaPath)) {
+    throw new Error("Audio file not found for transcription");
+  }
+
+  const audioPart = fileToInlinePart(mediaPath);
+  // The browser records audio as .webm. Gemini's video parser expects frames if we send 'video/webm'.
+  // Since it's purely audio, we must explicitly tell Gemini it's audio.
+  if (audioPart.inlineData.mimeType === 'video/webm') {
+    audioPart.inlineData.mimeType = 'audio/webm';
+  }
+
+  const geminiParts = [
+    { text: TRANSCRIBE_AUDIO_PROMPT },
+    audioPart
+  ];
+
+  try {
+    const { result, model_used } = await callGeminiCascade(geminiParts);
+    console.log(`[AI] Audio transcribed via ${model_used}`);
+    return result;
+  } catch (err) {
+    console.error('[AI] Transcription failed:', err.message);
+    throw err;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VERIFY RESOLUTION (Feature 4)
+// ═══════════════════════════════════════════════════════════════
+// In a real scenario, we might download the beforeMediaUrl to a local temp file,
+// or if Gemini accepts URLs directly, we can pass it.
+// To keep it simple and robust, we will assume we can fetch the image and convert it.
+
+import https from 'https';
+import http from 'http';
+
+function downloadFile(url) {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https') ? https : http;
+    client.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Failed to download file: ${res.statusCode}`));
+        return;
+      }
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+export async function verifyResolution(beforeMediaUrl, afterMediaPath) {
+  if (!afterMediaPath || !fs.existsSync(afterMediaPath)) {
+    throw new Error("After media file not found for verification");
+  }
+
+  let beforeBuffer = null;
+  let beforeMime = 'image/jpeg';
+  try {
+    beforeBuffer = await downloadFile(beforeMediaUrl);
+    if (beforeMediaUrl.toLowerCase().includes('.png')) beforeMime = 'image/png';
+    else if (beforeMediaUrl.toLowerCase().match(/\.(mp4|webm|mov|avi)($|\?)/)) beforeMime = 'video/mp4';
+  } catch (err) {
+    console.warn("[AI] Failed to download before media for resolution check:", err.message);
+    // Proceed without before image? We shouldn't.
+    throw new Error("Could not fetch the original issue media to compare against.");
+  }
+
+  const beforePart = {
+    inlineData: {
+      data: beforeBuffer.toString('base64'),
+      mimeType: beforeMime
+    }
+  };
+
+  const geminiParts = [
+    { text: RESOLVE_ISSUE_PROMPT },
+    { text: "Here is the ORIGINAL media (Before state):" },
+    beforePart,
+    { text: "Here is the NEW media (After state):" },
+    fileToInlinePart(afterMediaPath)
+  ];
+
+  try {
+    const { result, model_used } = await callGeminiCascade(geminiParts);
+    console.log(`[AI] Resolution verified via ${model_used}: ${result.is_resolved} (confidence: ${result.confidence})`);
+    return result;
+  } catch (err) {
+    console.error('[AI] Resolution verification failed:', err.message);
+    throw err;
+  }
 }
