@@ -24,6 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set('trust proxy', 1);
 const port = process.env.PORT || 3000;
 
 // ─── Storage Setup ───────────────────────────────────────────────
@@ -502,7 +503,7 @@ app.get('/api/health', (req, res) => {
 // ─── Global Error Handler ───────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
-  
+
   if (err.message?.includes('cannot verify your own')) {
     return res.status(403).json({ error: err.message });
   }
@@ -512,22 +513,22 @@ app.use((err, req, res, next) => {
   if (err.message?.includes('required') || err.message?.includes('Invalid')) {
     return res.status(400).json({ error: err.message });
   }
-  
+
   res.status(500).json({ error: 'Internal server error', details: err.message });
 });
 
 // ─── Start Server ───────────────────────────────────────────────
 app.listen(port, '0.0.0.0', () => {
   console.log(`\n╔══════════════════════════════════════════════╗`);
-  console.log(`║     CivicPulse AI Backend — v0.5.0          ║`);
-  console.log(`║     Milestones 1-9 Complete                 ║`);
+  console.log(`║     CivicPulse AI Backend — v0.5.0        ║`);
+  console.log(`║     Milestones 1-9 Complete               ║`);
   console.log(`╠══════════════════════════════════════════════╣`);
-  console.log(`║  Server:    http://0.0.0.0:${port}            ║`);
+  console.log(`║  Server:    http://0.0.0.0:${port}           ║`);
   console.log(`║  Uploads:   ${UPLOAD_DIR.slice(-30).padEnd(32)}║`);
   console.log(`║  Gemini AI: ${(process.env.GEMINI_API_KEY ? 'Configured ✓' : 'NOT SET ✗').padEnd(32)}║`);
   console.log(`║  Groq AI:   ${(process.env.GROQ_API_KEY ? 'Configured ✓' : 'NOT SET ✗').padEnd(32)}║`);
   console.log(`║  Firebase:  ${(adminDb ? 'Admin SDK ✓' : 'NOT INIT ✗').padEnd(32)}║`);
-  console.log(`║  Agents:    5 autonomous agents ✓            ║`);
-  console.log(`║  Predict:   Hotspot + Trend + Risk ✓         ║`);
-  console.log(`╚══════════════════════════════════════════════╝\n`);
+  console.log(`║  Agents:    5 autonomous agents ✓           ║`);
+  console.log(`║  Predict:   Hotspot + Trend + Risk ✓        ║`);
+  console.log(`╚═════════════════════════════════════════════╝\n`);
 });
