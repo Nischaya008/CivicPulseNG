@@ -1,6 +1,6 @@
 # CivicPulseNG: Agentic Hyperlocal Civic Intelligence
 ---
-> **Note:- The backend is robustly deployed on Hugging Face Spaces, fully containerized via Docker to seamlessly handle the multi-agent AI pipeline and background analytics workflows.**
+> **Note:- The backend is robustly deployed on Hugging Face Spaces while the frontend is hosted via Firebase Hosting on Google Cloud, fully containerized via Docker to seamlessly handle the multi-agent AI pipeline and background analytics workflows.**
 ---
 An AI-native, agentic civic operating system for communities, citizens, and local governments that moves beyond traditional issue reporting.
 
