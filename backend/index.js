@@ -5,7 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { analyzeIssue, summarizeIssue, generateEmbedding, findDuplicates } from './api/aiService.js';
+import { analyzeIssue, summarizeIssue, generateEmbedding, findDuplicates, transcribeAudio, verifyResolution } from './api/aiService.js';
 import { submitVote, getVerification, getUserVote, addEvidence, getEvidence, calculateTrustScore } from './api/verificationService.js';
 import {
   createNotification, markNotificationsRead, markAllRead,
@@ -26,7 +26,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.set('trust proxy', 1);
 const port = process.env.PORT || 3000;
-
 // ─── Storage Setup ───────────────────────────────────────────────
 const UPLOAD_DIR = process.env.STORAGE_PATH
   ? process.env.STORAGE_PATH
@@ -50,7 +49,7 @@ const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB max
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|wav|mp3|mpeg|ogg/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|webm|wav|mp3|mpeg|ogg/;
     const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
     if (allowedTypes.test(ext)) {
       cb(null, true);
@@ -148,6 +147,70 @@ app.post('/api/ai/check-duplicates', asyncHandler(async (req, res) => {
   const newEmbedding = await generateEmbedding(text);
   const result = findDuplicates(newEmbedding, existingIssues || []);
   res.json(result);
+}));
+
+app.post('/api/ai/transcribe', upload.single('file'), asyncHandler(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No audio file uploaded' });
+  }
+
+  const result = await transcribeAudio(req.file.path);
+  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+  res.json({
+    ...result,
+    audio_url: fileUrl
+  });
+}));
+
+// ════════════════════════════════════════════════════════════════
+// ROUTES: Resolution (Feature 4)
+// ════════════════════════════════════════════════════════════════
+
+app.post('/api/issues/:issueId/resolve', upload.single('file'), asyncHandler(async (req, res) => {
+  const { issueId } = req.params;
+  const { user_id } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No resolution media uploaded' });
+  }
+
+  // Fetch the issue to get the before image URL
+  const issueRef = adminDb.collection('issues').doc(issueId);
+  const issueSnap = await issueRef.get();
+
+  if (!issueSnap.exists) {
+    return res.status(404).json({ error: 'Issue not found' });
+  }
+
+  const issueData = issueSnap.data();
+  if (!issueData.media_urls || issueData.media_urls.length === 0) {
+    return res.status(400).json({ error: 'Original issue has no media to compare against' });
+  }
+
+  const beforeMediaUrl = issueData.media_urls[0];
+  const afterMediaPath = req.file.path;
+  const afterMediaUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+  // Call AI verification
+  const verificationResult = await verifyResolution(beforeMediaUrl, afterMediaPath);
+
+  // If verified and confident, update issue
+  if (verificationResult.is_resolved && verificationResult.confidence >= 0.7) {
+    await issueRef.update({
+      status: 'Resolved',
+      resolution_media_url: afterMediaUrl,
+      resolution_confidence: verificationResult.confidence,
+      resolution_reasoning: verificationResult.reasoning,
+      resolved_by: user_id || null,
+      resolved_at: FieldValue.serverTimestamp()
+    });
+  }
+
+  res.json({
+    ...verificationResult,
+    after_media_url: afterMediaUrl
+  });
 }));
 
 // ════════════════════════════════════════════════════════════════
